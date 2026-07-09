@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- skill:chrome -->
+<style>
+/* Credit line — bottom-right */
+.design-ui-credit {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  font: 11px/1 system-ui, sans-serif;
+  color: rgba(128,128,128,0.5);
+  pointer-events: none;
+  z-index: 2147483647;
+  transition: opacity 0.4s ease;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
+/* Hide chrome on touch devices */
+@media (hover: none) {
+  .design-ui-credit { display: none; }
+}
+
+/* Print fixes */
+@media print {
+  * {
+    transition: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+  }
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .design-ui-credit { display: none !important; }
+}
+
+</style>
+<script>
+(function () {
+    // Design-ui pages are single compositions, so the whole body is editable.
+    function markEditable() {
+        document.body.classList.add('artifact-editable');
+    }
+
+    // Credit badge with idle-fade. Hover devices only.
+    function initChromeUI() {
+        if (!matchMedia('(hover: hover)').matches) return;
+
+        var credit = document.createElement('div');
+        credit.className = 'design-ui-credit';
+        credit.setAttribute('aria-hidden', 'true');
+        credit.innerHTML = '\u{1F49C} by ClickUp Brain';
+        document.body.appendChild(credit);
+
+        var timer = null;
+        var fade = function (out) { credit.style.opacity = out ? '0' : ''; };
+        fade(true);
+        var show = function () {
+            fade(false);
+            clearTimeout(timer);
+            timer = setTimeout(function () { fade(true); }, 3000);
+        };
+        document.addEventListener('mousemove', show);
+        show();
+    }
+
+    function init() {
+        markEditable();
+        initChromeUI();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+</script>
+<!-- /skill:chrome -->
+<!-- skill:libraries -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js" integrity="sha384-XcdcwHqIPULERb2yDEM4R0XaQKU3YnDsrTmjACBZyfdVVqjh6xQ4/DCMd7XLcA6Y" crossorigin="anonymous"></script>
+<!-- /skill:libraries -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Traffic Management System</title>
+<style>
+  :root {
+    --bg: oklch(97% 0.007 250); --surface: oklch(100% 0 0); --surface-2: oklch(98.5% 0.005 250);
+    --line: oklch(91% 0.008 250); --line-2: oklch(86% 0.01 250);
+    --ink: oklch(24% 0.02 250); --ink-soft: oklch(46% 0.015 250); --ink-faint: oklch(62% 0.012 250);
+    --pri: oklch(52% 0.13 235); --pri-hi: oklch(46% 0.13 235); --pri-tint: oklch(95% 0.035 235);
+    --amber: oklch(72% 0.15 65); --amber-tint: oklch(95% 0.05 70);
+    --ok: oklch(58% 0.14 150); --ok-tint: oklch(95% 0.05 150);
+    --bad: oklch(58% 0.18 27); --bad-tint: oklch(95% 0.05 27);
+    --violet: oklch(55% 0.16 290); --violet-tint: oklch(95% 0.04 290);
+    --sidebar: oklch(24% 0.035 258); --sidebar-2: oklch(30% 0.04 258);
+    --r: 14px; --r-sm: 9px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-6: 24px; --sp-8: 32px; --sp-12: 48px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --shadow-sm: 0 1px 2px oklch(24% 0.02 250 / 0.05);
+    --shadow-md: 0 6px 20px oklch(24% 0.02 250 / 0.08);
+    --shadow-lg: 0 16px 40px oklch(24% 0.02 250 / 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  h1,h2,h3 { text-wrap: balance; letter-spacing: -0.01em; }
+  button, input, select { font: inherit; color: inherit; }
+  table { font-variant-numeric: tabular-nums; }
+  img { display: block; }
+
+  #login { min-height: 100vh; display: grid; place-items: center; padding: var(--sp-6);
+    background: radial-gradient(130% 100% at 75% 0%, oklch(52% 0.13 235 / 0.14), transparent 55%),
+                linear-gradient(180deg, oklch(96% 0.01 250), var(--bg)); }
+  .login-card { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 20px; padding: var(--sp-8); box-shadow: var(--shadow-lg); animation: rise 0.5s var(--ease) both; }
+  .brand-badge { width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(145deg, var(--pri), var(--violet)); color: #fff;
+    display: grid; place-items: center; margin-bottom: var(--sp-4); box-shadow: var(--shadow-md); }
+  .login-card h1 { font-size: 1.55rem; margin-bottom: 2px; }
+  .login-card .sub { color: var(--ink-soft); font-size: 0.9rem; margin-bottom: var(--sp-6); }
+  .field { margin-bottom: var(--sp-4); }
+  .field label { display: block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
+  input, select { width: 100%; padding: 11px 13px; background: var(--surface-2); border: 1px solid var(--line-2);
+    border-radius: var(--r-sm); transition: border-color 0.15s, box-shadow 0.15s; }
+  input:focus-visible, select:focus-visible { outline: none; border-color: var(--pri); box-shadow: 0 0 0 3px var(--pri-tint); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 11px 18px;
+    border: 1px solid transparent; border-radius: var(--r-sm); background: var(--pri); color: #fff; font-weight: 600;
+    cursor: pointer; transition: background 0.15s var(--ease), transform 0.1s var(--ease), box-shadow 0.15s; }
+  .btn:hover { background: var(--pri-hi); box-shadow: var(--shadow-sm); } .btn:active { transform: translateY(1px); }
+  .btn.block { width: 100%; }
+  .btn.ghost { background: var(--surface); color: var(--ink); border-color: var(--line-2); }
+  .btn.ghost:hover { background: var(--surface-2); }
+  .btn.ok { background: var(--ok); } .btn.ok:hover { filter: brightness(0.95); }
+  .btn.sm { padding: 7px 13px; font-size: 0.85rem; }
+  .hint { font-size: 0.78rem; color: var(--ink-faint); text-align: center; margin-top: var(--sp-6); }
+  .login-err { background: var(--bad-tint); color: var(--bad); padding: 9px 12px; border-radius: var(--r-sm);
+    font-size: 0.85rem; margin-bottom: var(--sp-4); }
+
+  .role-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: var(--sp-6);
+    background: var(--surface-2); padding: 5px; border-radius: 12px; border: 1px solid var(--line); }
+  .role-tab { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 8px;
+    cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--ink-soft); transition: all 0.18s var(--ease); }
+  .role-tab.active { background: var(--surface); color: var(--pri-hi); box-shadow: var(--shadow-sm); }
+  .role-tab svg { flex-shrink: 0; }
+
+  #app { display: none; min-height: 100vh; }
+  .shell { display: grid; grid-template-columns: 244px 1fr; min-height: 100vh; }
+  aside { background: linear-gradient(180deg, var(--sidebar), oklch(21% 0.035 262)); color: oklch(88% 0.01 250);
+    position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: var(--sp-4); }
+  .logo { display: flex; align-items: center; gap: 11px; padding: var(--sp-2) var(--sp-2) var(--sp-6);
+    font-weight: 700; color: #fff; font-size: 1.1rem; }
+  .logo .mk { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(145deg, var(--pri), var(--violet));
+    display: grid; place-items: center; color: #fff; box-shadow: var(--shadow-sm); }
+  .logo small { display:block; font-size: 0.68rem; font-weight: 500; color: oklch(66% 0.02 250); letter-spacing: 0.03em; }
+  nav.side { display: flex; flex-direction: column; gap: 3px; flex: 1; overflow-y: auto; }
+  .nav-label { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(58% 0.02 250);
+    padding: var(--sp-3) 12px 6px; font-weight: 600; }
+  .navlink { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--r-sm);
+    color: oklch(80% 0.015 250); cursor: pointer; font-weight: 500; transition: background 0.15s, color 0.15s; }
+  .navlink:hover { background: var(--sidebar-2); color: #fff; }
+  .navlink.active { background: linear-gradient(145deg, var(--pri), var(--pri-hi)); color: #fff; box-shadow: var(--shadow-sm); }
+  .navlink svg { flex-shrink: 0; }
+  .navlink .badge-n { margin-left: auto; background: var(--bad); color:#fff; font-size:0.68rem; font-weight:700; padding:1px 7px; border-radius:999px; }
+  .side-foot { border-top: 1px solid oklch(36% 0.03 258); padding-top: var(--sp-3); margin-top: var(--sp-3); }
+  .side-user { display:flex; align-items:center; gap:10px; font-size: 0.82rem; color: oklch(72% 0.015 250); padding: 0 8px 10px; }
+  .side-user .av { width:34px; height:34px; border-radius:50%; background: linear-gradient(145deg, var(--violet), var(--pri));
+    display:grid; place-items:center; color:#fff; font-weight:700; font-size:0.85rem; flex-shrink:0; }
+  .side-user b { color: #fff; font-weight: 600; display:block; }
+  .side-user .role-tag { font-size:0.68rem; color: oklch(66% 0.02 250); text-transform:uppercase; letter-spacing:0.05em; }
+
+  main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: oklch(100% 0 0 / 0.8); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+    padding: var(--sp-4) var(--sp-8); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 5; }
+  .topbar h2 { font-size: 1.2rem; } .topbar .crumb { font-size: 0.78rem; color: var(--ink-faint); }
+  .content { padding: var(--sp-8); animation: fade 0.35s var(--ease); }
+  .role-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 11px; border-radius:999px; font-size:0.76rem; font-weight:600; }
+  .role-badge.admin { background: var(--violet-tint); color: var(--violet); }
+  .role-badge.officer { background: var(--pri-tint); color: var(--pri-hi); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-6); }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: var(--sp-6);
+    position: relative; overflow: hidden; transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease); }
+  .stat:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .stat .ic { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; margin-bottom: var(--sp-4); }
+  .stat .k { font-size: 0.78rem; color: var(--ink-soft); margin-bottom: 4px; }
+  .stat .v { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.02em; }
+  .stat .trend { font-size:0.74rem; margin-top:6px; font-weight:600; }
+  .stat .trend.up { color: var(--ok); } .stat .trend.down { color: var(--bad); }
+
+  .grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--sp-6); align-items: start; }
+  @media (max-width: 1080px){ .grid-2 { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); }
+  .panel + .panel { margin-top: var(--sp-6); }
+  .panel-head { padding: var(--sp-4) var(--sp-6); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); flex-wrap: wrap; }
+  .panel-head h3 { font-size: 1rem; } .panel-body { padding: var(--sp-6); }
+
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  thead th { text-align: left; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--ink-faint); padding: 11px var(--sp-4); border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--surface-2); }
+  tbody td { padding: 12px var(--sp-4); border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background 0.12s; } tbody tr:hover { background: var(--surface-2); }
+  td.mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.8rem; color: var(--ink-soft); }
+  .empty { text-align: center; color: var(--ink-faint); padding: var(--sp-12) var(--sp-4); }
+  .empty svg { color: var(--line-2); margin-bottom: var(--sp-3); }
+
+  .thumb { width: 56px; height: 42px; border-radius: 8px; object-fit: cover; background: var(--surface-2); border: 1px solid var(--line); }
+
+  .pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 11px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+  .pill.paid { background: var(--ok-tint); color: var(--ok); }
+  .pill.unpaid { background: var(--bad-tint); color: var(--bad); }
+  .chip { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:999px; font-size:0.78rem; font-weight:500;
+    background: var(--pri-tint); color: var(--pri-hi); }
+
+  .act { display: inline-flex; gap: var(--sp-2); }
+  .link-btn { background: none; border: none; cursor: pointer; font-weight: 600; font-size: 0.85rem; padding: 2px 4px; }
+  .link-btn.edit { color: var(--pri); } .link-btn.del { color: var(--bad); }
+  .link-btn:hover { text-decoration: underline; }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sp-4); align-items: end; }
+  .fl { display: block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
+  .form-note { font-size: 0.8rem; color: var(--ink-faint); margin-top: var(--sp-3); }
+  .search-row { display: flex; gap: var(--sp-2); flex-wrap: wrap; } .search-row input, .search-row select { min-width: 160px; }
+
+  .drop { border: 1.5px dashed var(--line-2); border-radius: var(--r-sm); padding: var(--sp-4); text-align: center;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s; background: var(--surface-2); color: var(--ink-soft); font-size: 0.85rem; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .drop:hover { border-color: var(--pri); background: var(--pri-tint); color: var(--pri-hi); }
+  .drop input { display: none; }
+  .preview { position: relative; width: 100%; height: 120px; border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--line); }
+  .preview img { width: 100%; height: 100%; object-fit: cover; }
+  .preview .rm { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%;
+    background: oklch(24% 0.02 250 / 0.72); color:#fff; border:none; cursor:pointer; display:grid; place-items:center; }
+
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: var(--sp-4); }
+  .gcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden;
+    box-shadow: var(--shadow-sm); transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease); }
+  .gcard:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .gcard .ph { width: 100%; aspect-ratio: 4/3; object-fit: cover; background: var(--surface-2); cursor: zoom-in; }
+  .gcard .meta { padding: var(--sp-4); }
+  .gcard .meta .plate { font-weight: 700; font-size: 0.95rem; }
+  .gcard .meta .owner { font-size: 0.82rem; color: var(--ink-soft); margin-top: 2px; }
+  .gcard .meta .row { display:flex; gap:8px; margin-top:8px; font-size:0.78rem; color: var(--ink-faint); }
+
+  /* activity feed */
+  .feed { display:flex; flex-direction:column; gap:2px; }
+  .feed .item { display:flex; gap:12px; padding:10px 0; border-bottom:1px dashed var(--line); }
+  .feed .item:last-child { border-bottom:none; }
+  .feed .fi { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; flex-shrink:0; }
+  .feed .txt { font-size:0.88rem; } .feed .txt .t { color: var(--ink-faint); font-size:0.76rem; margin-top:1px; }
+
+  /* officer card */
+  .off-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: var(--sp-4); }
+  .off-card { background: var(--surface); border:1px solid var(--line); border-radius: var(--r); padding: var(--sp-6); box-shadow: var(--shadow-sm); display:flex; gap:14px; align-items:center; }
+  .off-card .oav { width:48px; height:48px; border-radius:50%; background: linear-gradient(145deg,var(--pri),var(--violet)); color:#fff; display:grid; place-items:center; font-weight:700; font-size:1.1rem; flex-shrink:0; }
+  .off-card .on { font-weight:700; } .off-card .om { font-size:0.8rem; color:var(--ink-soft); }
+
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 999px; font-size: 0.88rem; font-weight: 500;
+    box-shadow: var(--shadow-lg); opacity: 0; pointer-events: none;
+    transition: opacity 0.25s var(--ease), transform 0.25s var(--ease); z-index: 50; display: flex; align-items: center; gap: 8px; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .banner { background: var(--amber-tint); color: oklch(40% 0.08 65); font-size: 0.8rem; text-align: center; padding: 8px 12px; font-weight: 500; }
+
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--sp-6); }
+  .chart-box { position: relative; height: 260px; } .mb { margin-bottom: var(--sp-6); }
+
+  .overlay { position: fixed; inset: 0; background: oklch(20% 0.02 250 / 0.55); backdrop-filter: blur(3px);
+    display: none; place-items: center; z-index: 60; padding: var(--sp-6); }
+  .overlay.show { display: grid; animation: fade 0.2s var(--ease); }
+  .modal { width: 100%; max-width: 420px; background: var(--surface); border-radius: 18px; box-shadow: var(--shadow-lg);
+    overflow: hidden; animation: rise 0.3s var(--ease) both; }
+  .modal .m-body { padding: var(--sp-8); }
+  .receipt-badge { width: 68px; height: 68px; border-radius: 50%; background: var(--ok-tint); color: var(--ok);
+    display: grid; place-items: center; margin: 0 auto var(--sp-4); }
+  .receipt-badge svg { animation: pop 0.45s var(--ease) 0.05s both; }
+  .receipt h3 { text-align: center; font-size: 1.3rem; }
+  .receipt .amt { text-align: center; font-size: 2.2rem; font-weight: 700; margin: 4px 0 var(--sp-6); color: var(--ok); }
+  .receipt .rows { border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; margin-bottom: var(--sp-6); }
+  .receipt .rows .r { display: flex; justify-content: space-between; padding: 10px 14px; font-size: 0.88rem; border-bottom: 1px dashed var(--line); }
+  .receipt .rows .r:last-child { border-bottom: none; }
+  .receipt .rows .r span:first-child { color: var(--ink-soft); }
+  .receipt .rows .r b { font-weight: 600; }
+  .m-lightbox img { max-width: 90vw; max-height: 85vh; border-radius: var(--r); box-shadow: var(--shadow-lg); }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    aside { position: fixed; inset: 0 auto 0 0; z-index: 40; transform: translateX(-100%); transition: transform 0.3s var(--ease); width: 244px; box-shadow: var(--shadow-lg); }
+    aside.open { transform: none; }
+    .scrim { display: none; position: fixed; inset: 0; background: oklch(24% 0.02 250 / 0.4); z-index: 39; }
+    .scrim.show { display: block; }
+    .menu-btn { display: inline-grid !important; }
+    .content { padding: var(--sp-4); } .topbar { padding: var(--sp-4); }
+  }
+  .menu-btn { display: none; place-items: center; width: 38px; height: 38px; border-radius: var(--r-sm);
+    background: var(--surface-2); border: 1px solid var(--line-2); cursor: pointer; }
+</style>
+</head>
+<body>
+
+<section id="login">
+  <div class="login-card">
+    <div class="brand-badge">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="5"/><circle cx="12" cy="7" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none"/></svg>
+    </div>
+    <h1>Traffic Management</h1>
+    <p class="sub">Choose your role and sign in</p>
+    <div class="role-tabs">
+      <div class="role-tab active" id="tab_admin" onclick="pickRole('admin')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Admin
+      </div>
+      <div class="role-tab" id="tab_officer" onclick="pickRole('officer')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Officer
+      </div>
+    </div>
+    <div id="loginErr"></div>
+    <div class="field"><label for="u">Username</label><input id="u" value="admin" /></div>
+    <div class="field"><label for="p">Password</label><input id="p" type="password" value="admin123" onkeydown="if(event.key==='Enter')tmsLogin()" /></div>
+    <button class="btn block" type="button" onclick="tmsLogin()">Sign in</button>
+    <p class="hint" id="loginHint">Admin: admin / admin123</p>
+  </div>
+</section>
+
+<div id="app">
+  <div class="scrim" id="scrim" onclick="tmsNav(false)"></div>
+  <div class="shell">
+    <aside id="aside">
+      <div class="logo">
+        <span class="mk"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="5"/><circle cx="12" cy="7" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="1.3" fill="currentColor" stroke="none"/></svg></span>
+        <div>TMS<small>Traffic Console</small></div>
+      </div>
+      <nav class="side" id="nav"></nav>
+      <div class="side-foot">
+        <div class="side-user"><span class="av" id="userAv">A</span><span>Signed in as <b id="userName">admin</b><span class="role-tag" id="userRole">Administrator</span></span></div>
+        <div class="navlink" onclick="tmsLogout()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Logout
+        </div>
+      </div>
+    </aside>
+    <main>
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="menu-btn" onclick="tmsNav(true)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
+          <div><div class="crumb">Traffic Management System</div><h2 id="pageTitle">Dashboard</h2></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span id="roleBadge"></span>
+          <button class="btn ghost sm" id="resetBtn" onclick="tmsReset()">Reset data</button>
+        </div>
+      </div>
+      <div id="storeWarn"></div>
+      <div class="content" id="view"></div>
+    </main>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div class="overlay" id="modal" onclick="if(event.target===this)closeModal()"><div id="modalInner"></div></div>
+
+<script>
+"use strict";
+
+var storageOK = true, memStore = {};
+function sGet(k){ try { return localStorage.getItem(k); } catch(e){ storageOK=false; return memStore[k]||null; } }
+function sSet(k,v){ try { localStorage.setItem(k,v); } catch(e){ storageOK=false; memStore[k]=v; } }
+function sDel(k){ try { localStorage.removeItem(k); } catch(e){} delete memStore[k]; }
+
+var KEY = "tms_data_v4";
+
+var ACCOUNTS = {
+  admin:   { pass:"admin123",   role:"admin",   name:"Admin",         display:"Administrator" },
+  officer: { pass:"officer123", role:"officer", name:"Officer Singh", display:"Traffic Officer" }
+};
+var ROLE_PAGES = {
+  admin:   ["dashboard","report","vehicles","gallery","violations","challans","officers"],
+  officer: ["dashboard","vehicles","gallery","violations","challans"]
+};
+var session = { role:"admin", name:"Admin", display:"Administrator" };
+function can(action){
+  if (session.role === "officer"){
+    if (action === "deleteVehicle") return false;
+    if (action === "editVehicle")   return false;
+    if (action === "resetData")     return false;
+    if (action === "payChallan")    return false;
+  }
+  return true;
+}
+
+var ICONS = {
+  dashboard:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
+  vehicles:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H3v-5l2-4h11l4 4v5h-2"/><circle cx="7.5" cy="17.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/></svg>',
+  gallery:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
+  violations:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  challans:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>',
+  report:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+  officers:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  img:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
+  cash:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>'
+};
+var VIOLATION_TYPES = ["Over Speeding","Signal Jump","No Helmet","Wrong Parking","No Seatbelt","Drunk Driving","Illegal U-Turn","Expired Insurance"];
+var OFFICERS = [
+  {name:"Insp. Verma", badge:"TP-1042", zone:"Central"},
+  {name:"SI Kulkarni", badge:"TP-2087", zone:"North"},
+  {name:"Officer Singh", badge:"TP-3120", zone:"East"},
+  {name:"HC Fernandes", badge:"TP-4471", zone:"West"}
+];
+
+function carSvg(color){
+  var c = color || "#5b7fb5";
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240">' +
+    '<rect width="320" height="240" fill="#eef1f6"/><rect y="170" width="320" height="70" fill="#e2e7ef"/><g>' +
+    '<path d="M58 150 l24 -44 q6 -12 20 -12 h116 q14 0 20 12 l24 44 z" fill="'+c+'"/>' +
+    '<rect x="52" y="150" width="216" height="40" rx="12" fill="'+c+'"/>' +
+    '<path d="M96 106 q4 -8 14 -8 h100 q10 0 14 8 l14 30 h-156 z" fill="#dfe6f0" opacity="0.85"/>' +
+    '<circle cx="104" cy="192" r="22" fill="#2b2f36"/><circle cx="104" cy="192" r="9" fill="#c7ccd4"/>' +
+    '<circle cx="216" cy="192" r="22" fill="#2b2f36"/><circle cx="216" cy="192" r="9" fill="#c7ccd4"/>' +
+    '<rect x="60" y="150" width="14" height="12" rx="3" fill="#ffd45e"/><rect x="246" y="150" width="14" height="12" rx="3" fill="#ff5a5a"/>' +
+    '</g></svg>');
+}
+function colorHex(name){
+  var map={white:"#c9d2e0",grey:"#8a93a3",gray:"#8a93a3",black:"#3a3f47",blue:"#4a6fb5",red:"#c1503f",silver:"#b6bdc9",green:"#3f8f6b"};
+  return map[(name||"").toLowerCase()] || "#5b7fb5";
+}
+function vehImg(v){ return v.photo ? v.photo : carSvg(colorHex(v.color)); }
+
+function fmtNum(t){ return new Date(t).toISOString().replace(/\D/g,"").slice(0,14); }
+function seed(){
+  var now = Date.now(), D=86400000, H=3600000, iso = function(d){ return new Date(d).toISOString().slice(0,16).replace("T"," "); };
+  var veh = [
+    {id:1,plate:"KA-01-HJ-9021",owner:"Ananya Rao",model:"Honda City",color:"White",phone:"98450 11223",photo:""},
+    {id:2,plate:"MH-12-DE-4432",owner:"Rohit Sharma",model:"Hyundai i20",color:"Grey",phone:"98220 33445",photo:""},
+    {id:3,plate:"DL-8C-AF-1290",owner:"Priya Nair",model:"Tata Nexon",color:"Blue",phone:"98100 55667",photo:""},
+    {id:4,plate:"TN-09-BX-7745",owner:"Karthik Iyer",model:"Maruti Swift",color:"Red",phone:"90030 99881",photo:""},
+    {id:5,plate:"GJ-05-KL-2210",owner:"Meera Shah",model:"Kia Seltos",color:"Silver",phone:"99250 44556",photo:""},
+    {id:6,plate:"UP-16-MN-6690",owner:"Arjun Mehta",model:"Toyota Innova",color:"Black",phone:"98110 77220",photo:""}
+  ];
+  var vio = [
+    {id:1,vehicleId:1,type:"Over Speeding",location:"MG Road Signal",fine:1500,officer:"Insp. Verma",date:iso(now-D*6)},
+    {id:2,vehicleId:2,type:"No Helmet",location:"Ring Road Jn.",fine:500,officer:"SI Kulkarni",date:iso(now-D*5)},
+    {id:3,vehicleId:4,type:"Signal Jump",location:"Anna Salai",fine:1000,officer:"Officer Singh",date:iso(now-D*3)},
+    {id:4,vehicleId:1,type:"Wrong Parking",location:"Brigade Rd",fine:300,officer:"HC Fernandes",date:iso(now-D*2)},
+    {id:5,vehicleId:5,type:"Drunk Driving",location:"SG Highway",fine:5000,officer:"Insp. Verma",date:iso(now-D)},
+    {id:6,vehicleId:6,type:"No Seatbelt",location:"Hazratganj",fine:800,officer:"SI Kulkarni",date:iso(now-H*4)},
+    {id:7,vehicleId:4,type:"Over Speeding",location:"OMR Toll",fine:1500,officer:"Officer Singh",date:iso(now-H*2)}
+  ];
+  var chl = vio.map(function(v,i){
+    var paid = (i%2===0);
+    return {id:i+1,violationId:v.id,number:"CHL-"+fmtNum(now-D*(7-i))+ (100+i), status: paid?"Paid":"Unpaid",
+      issued: v.date, paid: paid ? iso(now-D*(6-i)) : null, method: paid ? ["UPI","Card","Cash"][i%3] : null };
+  });
+  return { seq:{vehicle:6,violation:7,challan:chl.length}, vehicles:veh, violations:vio, challans:chl };
+}
+function load(){ var raw = sGet(KEY); if(raw){ try { var d=JSON.parse(raw); if(d&&d.vehicles) return d; } catch(e){} } var s = seed(); save(s); return s; }
+function save(d){ sSet(KEY, JSON.stringify(d)); }
+var DB = load();
+
+function $(s,r){ return (r||document).querySelector(s); }
+function money(n){ return "₹" + Number(n||0).toLocaleString("en-IN"); }
+function stamp(){ return new Date().toISOString().slice(0,16).replace("T"," "); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+function newChallanNo(){ return "CHL-" + fmtNum(Date.now()) + Math.floor(100+Math.random()*900); }
+function val(id){ var el = $(id); return el ? el.value.trim() : ""; }
+
+var toastTimer;
+function toast(msg,kind){
+  var t = $("#toast");
+  var mark = (kind!=="err")
+    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  t.innerHTML = mark + esc(msg); t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+}
+function openModal(html){ $("#modalInner").innerHTML = html; $("#modal").classList.add("show"); }
+function closeModal(){ $("#modal").classList.remove("show"); $("#modalInner").innerHTML = ""; }
+function lightbox(src){ if(!src)return; openModal('<div class="m-lightbox"><img src="'+src+'" alt=""></div>'); }
+
+var pickedRole = "admin";
+function pickRole(r){
+  pickedRole = r;
+  $("#tab_admin").classList.toggle("active", r==="admin");
+  $("#tab_officer").classList.toggle("active", r==="officer");
+  if (r === "admin"){ $("#u").value="admin"; $("#p").value="admin123"; $("#loginHint").textContent="Admin: admin / admin123"; }
+  else { $("#u").value="officer"; $("#p").value="officer123"; $("#loginHint").textContent="Officer: officer / officer123"; }
+  $("#loginErr").innerHTML = "";
+}
+function tmsLogin(){
+  var u = val("#u").toLowerCase(), p = val("#p");
+  var acc = ACCOUNTS[u];
+  if (acc && acc.pass === p){
+    session = { role: acc.role, name: acc.name, display: acc.display };
+    $("#login").style.display = "none";
+    $("#app").style.display = "block";
+    if (!storageOK){ $("#storeWarn").innerHTML = '<div class="banner">Preview blocks saving, so data resets on close. Download the file and open it directly to save permanently.</div>'; }
+    applyRoleChrome(); buildNav(); go("dashboard");
+  } else { $("#loginErr").innerHTML = '<div class="login-err">Invalid username or password.</div>'; }
+}
+function applyRoleChrome(){
+  $("#userName").textContent = session.name;
+  $("#userRole").textContent = session.display;
+  $("#userAv").textContent = session.name.charAt(0).toUpperCase();
+  $("#roleBadge").innerHTML = '<span class="role-badge '+session.role+'">'+(session.role==="admin"?"Admin access":"Officer access")+'</span>';
+  $("#resetBtn").style.display = can("resetData") ? "" : "none";
+}
+function tmsLogout(){ $("#app").style.display="none"; $("#login").style.display="grid"; $("#loginErr").innerHTML=""; }
+function tmsReset(){ if(!can("resetData")){ toast("Officers can't reset data","err"); return; } if(confirm("Clear all stored data?")){ sDel(KEY); DB = load(); go(current); toast("Data reset"); } }
+
+var PAGE_LABELS = {dashboard:"Dashboard",vehicles:"Vehicles",gallery:"Vehicle Gallery",violations:"Violations",challans:"Challans",report:"Reports",officers:"Officers"};
+var current = "dashboard";
+function allowedPages(){ return ROLE_PAGES[session.role] || ROLE_PAGES.admin; }
+function unpaidCount(){ return DB.challans.filter(function(c){return c.status==="Unpaid";}).length; }
+function buildNav(){
+  var pages = allowedPages();
+  var overview = pages.filter(function(p){return p==="dashboard"||p==="report";});
+  var records  = pages.filter(function(p){return overview.indexOf(p)<0;});
+  var html = '<div class="nav-label">Overview</div>' + overview.map(navItem).join("");
+  html += '<div class="nav-label">Records</div>' + records.map(navItem).join("");
+  $("#nav").innerHTML = html;
+}
+function navItem(id){
+  var badge = (id==="challans" && unpaidCount()>0) ? '<span class="badge-n">'+unpaidCount()+'</span>' : '';
+  return '<div class="navlink" data-p="'+id+'" onclick="go(\''+id+'\')">'+(ICONS[id]||"")+PAGE_LABELS[id]+badge+'</div>';
+}
+function tmsNav(open){ $("#aside").classList.toggle("open",open); $("#scrim").classList.toggle("show",open); }
+function go(page){
+  if (allowedPages().indexOf(page) < 0){ page = "dashboard"; }
+  current = page;
+  buildNav();
+  document.querySelectorAll("#nav .navlink[data-p]").forEach(function(n){ n.classList.toggle("active", n.getAttribute("data-p")===page); });
+  $("#pageTitle").textContent = PAGE_LABELS[page] || "";
+  tmsNav(false);
+  ({dashboard:renderDashboard,vehicles:renderVehicles,gallery:renderGallery,violations:renderViolations,challans:renderChallans,report:renderReport,officers:renderOfficers}[page])();
+}
+
+function vehicleById(id){ return DB.vehicles.filter(function(v){return v.id===id;})[0]; }
+function fineOf(challan){ var vi = DB.violations.filter(function(v){return v.id===challan.violationId;})[0]; return vi?vi.fine:0; }
+function totals(){
+  var paid = DB.challans.filter(function(c){return c.status==="Paid";});
+  var unpaid = DB.challans.filter(function(c){return c.status==="Unpaid";});
+  var revenue = paid.reduce(function(s,c){ return s+fineOf(c); },0);
+  var pending = unpaid.reduce(function(s,c){ return s+fineOf(c); },0);
+  return {vehicles:DB.vehicles.length,violations:DB.violations.length,paid:paid.length,unpaid:unpaid.length,revenue:revenue,pending:pending};
+}
+function emptyRow(cols,msg){ return '<tr><td colspan="'+cols+'"><div class="empty">'+ICONS.report+'<div>'+msg+'</div></div></td></tr>'; }
+function thumb(v){ v=v||{}; return '<img class="thumb" src="'+vehImg(v)+'" alt="" style="cursor:zoom-in" onclick="lightbox(\''+vehImg(v).replace(/'/g,"\\'")+'\')">'; }
+
+/* ---- DASHBOARD ---- */
+function renderDashboard(){
+  var t = totals();
+  var recent = DB.violations.slice().sort(function(a,b){return b.id-a.id;}).slice(0,5);
+  var cards = [
+    ["Total Vehicles",t.vehicles,"vehicles","var(--pri)","var(--pri-tint)","up","Fleet on record"],
+    ["Total Violations",t.violations,"violations","var(--amber)","var(--amber-tint)","up","All time"],
+    ["Revenue Collected",money(t.revenue),"cash","var(--ok)","var(--ok-tint)","up","From paid challans"],
+    ["Pending Dues",money(t.pending),"challans","var(--bad)","var(--bad-tint)","down",t.unpaid+" unpaid"]
+  ];
+  // top violators
+  var byVeh = {}; DB.violations.forEach(function(v){ byVeh[v.vehicleId]=(byVeh[v.vehicleId]||0)+1; });
+  var top = Object.keys(byVeh).map(function(k){return {id:Number(k),n:byVeh[k]};}).sort(function(a,b){return b.n-a.n;}).slice(0,4);
+  // feed
+  var feed = DB.violations.slice().sort(function(a,b){return b.id-a.id;}).slice(0,6).map(function(v){
+    var ve = vehicleById(v.vehicleId)||{};
+    return '<div class="item"><div class="fi" style="background:var(--amber-tint);color:var(--amber)">'+ICONS.violations+'</div>'+
+      '<div class="txt"><div><b>'+esc(v.type)+'</b> on '+esc(ve.plate||"—")+' • '+money(v.fine)+'</div><div class="t">'+esc(v.officer||"Officer")+' • '+esc(v.date)+'</div></div></div>';
+  }).join("");
+
+  $("#view").innerHTML =
+    '<div class="stat-row">'+cards.map(function(c){return '<div class="stat"><div class="ic" style="background:'+c[4]+';color:'+c[3]+'">'+ICONS[c[2]]+'</div><div class="k">'+c[0]+'</div><div class="v">'+c[1]+'</div><div class="trend '+c[5]+'">'+c[6]+'</div></div>';}).join("")+'</div>'+
+    '<div class="grid-2">'+
+      '<div class="panel"><div class="panel-head"><h3>Recent Violations</h3><button class="btn sm" onclick="go(\'violations\')">Add violation</button></div>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>Vehicle</th><th>Plate</th><th>Type</th><th>Fine</th><th>Officer</th></tr></thead><tbody>'+
+      (recent.length ? recent.map(function(v){ var ve=vehicleById(v.vehicleId)||{}; return '<tr><td>'+thumb(ve)+'</td><td><b>'+esc(ve.plate)+'</b></td><td>'+esc(v.type)+'</td><td>'+money(v.fine)+'</td><td>'+esc(v.officer||"—")+'</td></tr>'; }).join("") : emptyRow(5,"No violations yet"))+
+      '</tbody></table></div></div>'+
+      '<div class="panel"><div class="panel-head"><h3>Activity Feed</h3></div><div class="panel-body"><div class="feed">'+(feed||'<div class="empty">Nothing yet</div>')+'</div></div></div>'+
+    '</div>'+
+    '<div class="panel"><div class="panel-head"><h3>Top Repeat Vehicles</h3><button class="btn ghost sm" onclick="go(\'gallery\')">View gallery</button></div>'+
+    '<div class="tbl-wrap"><table><thead><tr><th>Vehicle</th><th>Plate</th><th>Owner</th><th>Violations</th><th>Total Fines</th></tr></thead><tbody>'+
+    (top.length ? top.map(function(x){ var ve=vehicleById(x.id)||{}; var sum=DB.violations.filter(function(v){return v.vehicleId===x.id;}).reduce(function(s,v){return s+v.fine;},0);
+      return '<tr><td>'+thumb(ve)+'</td><td><b>'+esc(ve.plate)+'</b></td><td>'+esc(ve.owner)+'</td><td><span class="chip">'+x.n+'</span></td><td>'+money(sum)+'</td></tr>'; }).join("") : emptyRow(5,"No data"))+
+    '</tbody></table></div></div>';
+}
+
+/* ---- VEHICLES ---- */
+var editingVehicle = null, vehicleQuery = "", pendingPhoto = "";
+function renderVehicles(){
+  var editing = editingVehicle ? vehicleById(editingVehicle) : null;
+  if (editing && pendingPhoto === "") pendingPhoto = editing.photo || "";
+  var q = vehicleQuery.toLowerCase();
+  var list = DB.vehicles.filter(function(v){ return !q || v.plate.toLowerCase().indexOf(q)>=0 || v.owner.toLowerCase().indexOf(q)>=0; }).sort(function(a,b){return b.id-a.id;});
+  var canManage = can("editVehicle");
+  var formHtml = canManage ?
+    '<div class="panel mb"><div class="panel-head"><h3>'+(editing?"Edit vehicle":"Add vehicle")+'</h3></div><div class="panel-body">'+
+    '<div class="form-grid">'+
+    '<div><label class="fl">Plate number</label><input id="f_plate" value="'+esc(editing?editing.plate:"")+'" placeholder="KA-01-AB-1234"></div>'+
+    '<div><label class="fl">Owner name</label><input id="f_owner" value="'+esc(editing?editing.owner:"")+'" placeholder="Full name"></div>'+
+    '<div><label class="fl">Model</label><input id="f_model" value="'+esc(editing?editing.model:"")+'" placeholder="e.g. Honda City"></div>'+
+    '<div><label class="fl">Color</label><input id="f_color" value="'+esc(editing?editing.color:"")+'" placeholder="e.g. White"></div>'+
+    '<div><label class="fl">Phone</label><input id="f_phone" value="'+esc(editing?editing.phone:"")+'" placeholder="Contact"></div>'+
+    '<div><label class="fl">Vehicle photo</label><div id="photoZone">'+photoZone()+'</div></div>'+
+    '<div class="act"><button class="btn" type="button" onclick="saveVehicle()">'+(editing?"Update":"Add vehicle")+'</button>'+(editing?'<button class="btn ghost" type="button" onclick="cancelEdit()">Cancel</button>':'')+'</div>'+
+    '</div></div></div>' : '';
+  var actionsCol = canManage ? '<th>Actions</th>' : '';
+  $("#view").innerHTML = formHtml +
+    '<div class="panel"><div class="panel-head"><h3>All vehicles</h3><div class="search-row"><input id="f_search" placeholder="Search plate or owner" value="'+esc(vehicleQuery)+'" oninput="liveSearch(this.value)"></div></div>'+
+    '<div class="tbl-wrap"><table><thead><tr><th>Photo</th><th>Plate</th><th>Owner</th><th>Model</th><th>Color</th><th>Phone</th>'+actionsCol+'</tr></thead><tbody>'+
+    (list.length ? list.map(function(v){ return '<tr><td>'+thumb(v)+'</td><td><b>'+esc(v.plate)+'</b></td><td>'+esc(v.owner)+'</td><td>'+(esc(v.model)||"—")+'</td><td>'+(esc(v.color)||"—")+'</td><td>'+(esc(v.phone)||"—")+'</td>'+(canManage?'<td><div class="act"><button class="link-btn edit" onclick="startEdit('+v.id+')">Edit</button><button class="link-btn del" onclick="deleteVehicle('+v.id+')">Delete</button></div></td>':'')+'</tr>'; }).join("") : emptyRow(canManage?7:6, q?"No vehicles match your search":"No vehicles yet."))+
+    '</tbody></table></div></div>';
+}
+function photoZone(){
+  if (pendingPhoto){
+    return '<div class="preview"><img src="'+pendingPhoto+'" alt=""><button class="rm" type="button" onclick="clearPhoto()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>';
+  }
+  return '<label class="drop">'+ICONS.img+' <span>Click to upload a photo</span><input type="file" accept="image/*" onchange="onPhoto(event)"></label>';
+}
+function onPhoto(e){
+  var file = e.target.files && e.target.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    var img = new Image();
+    img.onload = function(){
+      var max = 800, w = img.width, h = img.height;
+      if (w > max || h > max){ var r = Math.min(max/w, max/h); w = Math.round(w*r); h = Math.round(h*r); }
+      var cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(img, 0, 0, w, h);
+      pendingPhoto = cv.toDataURL("image/jpeg", 0.8);
+      var z = $("#photoZone"); if(z) z.innerHTML = photoZone();
+    };
+    img.onerror = function(){ toast("Couldn't read that image","err"); };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function clearPhoto(){ pendingPhoto = ""; var z=$("#photoZone"); if(z) z.innerHTML = photoZone(); }
+function liveSearch(v){ vehicleQuery = v; renderVehicles(); var n=$("#f_search"); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length); } }
+function saveVehicle(){
+  var rec = {plate:val("#f_plate"),owner:val("#f_owner"),model:val("#f_model"),color:val("#f_color"),phone:val("#f_phone"),photo:pendingPhoto};
+  if (!rec.plate){ toast("Plate number is required","err"); var a=$("#f_plate"); if(a)a.focus(); return; }
+  if (!rec.owner){ toast("Owner name is required","err"); var b=$("#f_owner"); if(b)b.focus(); return; }
+  var dup = DB.vehicles.filter(function(v){ return v.plate.toLowerCase()===rec.plate.toLowerCase() && v.id!==editingVehicle; })[0];
+  if (dup){ toast("Plate number already exists","err"); return; }
+  if (editingVehicle){ var v=vehicleById(editingVehicle); v.plate=rec.plate;v.owner=rec.owner;v.model=rec.model;v.color=rec.color;v.phone=rec.phone;v.photo=rec.photo; editingVehicle=null; toast("Vehicle updated"); }
+  else { rec.id = ++DB.seq.vehicle; DB.vehicles.push(rec); toast("Vehicle added"); }
+  pendingPhoto = ""; save(DB); renderVehicles();
+}
+function startEdit(id){ if(!can("editVehicle")){toast("Officers can't edit vehicles","err");return;} editingVehicle=id; pendingPhoto=""; renderVehicles(); window.scrollTo({top:0,behavior:"smooth"}); }
+function cancelEdit(){ editingVehicle=null; pendingPhoto=""; renderVehicles(); }
+function deleteVehicle(id){ if(!can("deleteVehicle")){toast("Officers can't delete vehicles","err");return;} if(!confirm("Delete this vehicle?"))return; DB.vehicles=DB.vehicles.filter(function(v){return v.id!==id;}); if(editingVehicle===id){editingVehicle=null;pendingPhoto="";} save(DB); renderVehicles(); toast("Vehicle deleted"); }
+
+/* ---- GALLERY ---- */
+function gcard(v, compact){
+  var src = vehImg(v);
+  var img = '<img class="ph" src="'+src+'" alt="" onclick="lightbox(\''+src.replace(/'/g,"\\'")+'\')">';
+  var vio = DB.violations.filter(function(x){return x.vehicleId===v.id;}).length;
+  return '<div class="gcard">'+img+'<div class="meta"><div class="plate">'+esc(v.plate)+'</div><div class="owner">'+esc(v.owner)+'</div>'+
+    (compact ? '' : '<div class="row"><span>'+(esc(v.model)||"—")+'</span>•<span>'+(esc(v.color)||"—")+'</span></div><div style="margin-top:8px"><span class="chip">'+vio+' violation'+(vio===1?"":"s")+'</span></div>')+
+    '</div></div>';
+}
+function renderGallery(){
+  var list = DB.vehicles.slice().sort(function(a,b){return b.id-a.id;});
+  $("#view").innerHTML =
+    '<div class="panel"><div class="panel-head"><h3>Vehicle Gallery</h3>'+(can("editVehicle")?'<button class="btn sm" onclick="go(\'vehicles\')">Add vehicle</button>':'')+'</div><div class="panel-body">'+
+    (list.length ? '<div class="gallery">'+list.map(function(v){return gcard(v,false);}).join("")+'</div>' : '<div class="empty">'+ICONS.gallery+'<div>No vehicles yet.</div></div>')+
+    '</div></div>';
+}
+
+/* ---- VIOLATIONS ---- */
+function renderViolations(){
+  var list = DB.violations.slice().sort(function(a,b){return b.id-a.id;});
+  var officerDefault = session.role === "officer" ? session.name : "";
+  $("#view").innerHTML =
+    '<div class="panel mb"><div class="panel-head"><h3>Add violation</h3></div><div class="panel-body">'+
+    (DB.vehicles.length ?
+      '<div class="form-grid">'+
+      '<div><label class="fl">Vehicle</label><select id="v_vehicle"><option value="">Select vehicle</option>'+DB.vehicles.map(function(v){return '<option value="'+v.id+'">'+esc(v.plate)+' — '+esc(v.owner)+'</option>';}).join("")+'</select></div>'+
+      '<div><label class="fl">Violation type</label><select id="v_type"><option value="">Select type</option>'+VIOLATION_TYPES.map(function(t){return '<option>'+t+'</option>';}).join("")+'</select></div>'+
+      '<div><label class="fl">Location</label><input id="v_loc" placeholder="Where it happened"></div>'+
+      '<div><label class="fl">Fine (₹)</label><input id="v_fine" type="number" min="0" step="1" placeholder="0"></div>'+
+      '<div><label class="fl">Officer name</label><input id="v_off" value="'+esc(officerDefault)+'" placeholder="Issuing officer"></div>'+
+      '<div class="act"><button class="btn" type="button" onclick="saveViolation()">Save violation</button></div></div>'+
+      '<p class="form-note">A challan is generated automatically the moment a violation is saved.</p>'
+      : '<div class="empty">'+ICONS.vehicles+'<div>No vehicles available to fine.</div></div>')+
+    '</div></div>'+
+    '<div class="panel"><div class="panel-head"><h3>All violations</h3></div><div class="tbl-wrap"><table><thead><tr><th>Vehicle</th><th>Plate</th><th>Type</th><th>Location</th><th>Fine</th><th>Officer</th><th>Date</th></tr></thead><tbody>'+
+    (list.length ? list.map(function(v){ var ve=vehicleById(v.vehicleId)||{}; return '<tr><td>'+thumb(ve)+'</td><td><b>'+esc(ve.plate)+'</b></td><td>'+esc(v.type)+'</td><td>'+(esc(v.location)||"—")+'</td><td>'+money(v.fine)+'</td><td>'+(esc(v.officer)||"—")+'</td><td class="mono">'+esc(v.date)+'</td></tr>'; }).join("") : emptyRow(7,"No violations yet"))+
+    '</tbody></table></div></div>';
+}
+function saveViolation(){
+  var vs = $("#v_vehicle"), ts = $("#v_type");
+  var vehId = vs ? vs.value : "", type = ts ? ts.value : "";
+  if (!vehId){ toast("Select a vehicle","err"); return; }
+  if (!type){ toast("Select a violation type","err"); return; }
+  var fine = Number(val("#v_fine")||0);
+  if (!(fine > 0)){ toast("Enter a fine amount","err"); var f=$("#v_fine"); if(f)f.focus(); return; }
+  var v = {id:++DB.seq.violation,vehicleId:Number(vehId),type:type,location:val("#v_loc"),fine:fine,officer:val("#v_off")||"Officer",date:stamp()};
+  DB.violations.push(v);
+  DB.challans.push({id:++DB.seq.challan,violationId:v.id,number:newChallanNo(),status:"Unpaid",issued:stamp(),paid:null});
+  save(DB); renderViolations(); toast("Violation saved & challan generated");
+}
+
+/* ---- CHALLANS + PAYMENT ---- */
+var challanFilter = "all", challanQuery = "";
+function renderChallans(){
+  var canPay = can("payChallan");
+  var list = DB.challans.slice().sort(function(a,b){return b.id-a.id;}).filter(function(c){
+    if (challanFilter==="paid" && c.status!=="Paid") return false;
+    if (challanFilter==="unpaid" && c.status!=="Unpaid") return false;
+    if (challanQuery){
+      var vi=DB.violations.filter(function(v){return v.id===c.violationId;})[0]||{};
+      var ve=vehicleById(vi.vehicleId)||{};
+      var hay=(c.number+" "+(ve.plate||"")+" "+(ve.owner||"")).toLowerCase();
+      if (hay.indexOf(challanQuery.toLowerCase())<0) return false;
+    }
+    return true;
+  });
+  $("#view").innerHTML =
+    (canPay ? '' : '<div class="banner" style="border-radius:12px;margin-bottom:16px">Officer view: challans are read-only. Payments are collected by admin.</div>')+
+    '<div class="panel"><div class="panel-head"><h3>All challans</h3><div class="search-row">'+
+    '<input id="c_search" placeholder="Search no / plate / owner" value="'+esc(challanQuery)+'" oninput="challanSearch(this.value)">'+
+    '<select id="c_filter" onchange="challanSetFilter(this.value)"><option value="all"'+(challanFilter==="all"?" selected":"")+'>All</option><option value="unpaid"'+(challanFilter==="unpaid"?" selected":"")+'>Unpaid</option><option value="paid"'+(challanFilter==="paid"?" selected":"")+'>Paid</option></select>'+
+    '</div></div><div class="tbl-wrap"><table><thead><tr><th>Challan no.</th><th>Vehicle</th><th>Owner</th><th>Type</th><th>Fine</th><th>Status</th><th>Issued</th><th>Paid</th><th>Action</th></tr></thead><tbody>'+
+    (list.length ? list.map(function(c){ var vi=DB.violations.filter(function(v){return v.id===c.violationId;})[0]||{}; var ve=vehicleById(vi.vehicleId)||{};
+      var action = c.status==="Paid"
+        ? '<button class="link-btn edit" onclick="showReceipt('+c.id+')">View receipt</button>'
+        : (canPay ? '<button class="btn ok sm" onclick="openPay('+c.id+')">Pay now</button>' : '<span style="color:var(--ink-faint);font-size:.8rem">Pending</span>');
+      return '<tr><td class="mono">'+esc(c.number)+'</td><td><b>'+esc(ve.plate)+'</b></td><td>'+esc(ve.owner)+'</td><td>'+esc(vi.type)+'</td><td>'+money(vi.fine)+'</td><td>'+(c.status==="Paid"?'<span class="pill paid">✓ Paid</span>':'<span class="pill unpaid">Unpaid</span>')+'</td><td class="mono">'+esc(c.issued)+'</td><td class="mono">'+(esc(c.paid)||"—")+'</td><td>'+action+'</td></tr>'; }).join("") : emptyRow(9, (challanQuery||challanFilter!=="all")?"No challans match your filter.":"No challans yet."))+
+    '</tbody></table></div></div>';
+}
+function challanSearch(v){ challanQuery=v; renderChallans(); var n=$("#c_search"); if(n){n.focus(); n.setSelectionRange(n.value.length,n.value.length);} }
+function challanSetFilter(v){ challanFilter=v; renderChallans(); }
+function openPay(id){
+  if(!can("payChallan")){ toast("Officers can't collect payment","err"); return; }
+  var c = DB.challans.filter(function(x){return x.id===id;})[0]; if(!c) return;
+  var vi = DB.violations.filter(function(v){return v.id===c.violationId;})[0]||{};
+  var ve = vehicleById(vi.vehicleId)||{};
+  openModal(
+    '<div class="modal"><div class="panel-head"><h3>Pay challan</h3><button class="link-btn" onclick="closeModal()">✕</button></div>'+
+    '<div class="m-body"><div class="receipt"><div class="amt">'+money(vi.fine)+'</div>'+
+    '<div class="rows"><div class="r"><span>Challan no.</span><b>'+esc(c.number)+'</b></div>'+
+    '<div class="r"><span>Vehicle</span><b>'+esc(ve.plate)+'</b></div>'+
+    '<div class="r"><span>Owner</span><b>'+esc(ve.owner)+'</b></div>'+
+    '<div class="r"><span>Violation</span><b>'+esc(vi.type)+'</b></div></div>'+
+    '<label class="fl">Payment method</label>'+
+    '<select id="pay_method" style="margin-bottom:16px"><option>UPI</option><option>Card</option><option>Cash</option><option>Net Banking</option></select>'+
+    '<button class="btn ok block" type="button" onclick="confirmPay('+id+')">Pay '+money(vi.fine)+'</button>'+
+    '</div></div></div>'
+  );
+}
+function confirmPay(id){
+  var c = DB.challans.filter(function(x){return x.id===id;})[0]; if(!c) return;
+  c.status = "Paid"; c.paid = stamp(); var m=$("#pay_method"); c.method = m ? m.value : "UPI";
+  save(DB); showReceipt(id, true); toast("Payment successful");
+}
+function showReceipt(id, justPaid){
+  var c = DB.challans.filter(function(x){return x.id===id;})[0]; if(!c) return;
+  var vi = DB.violations.filter(function(v){return v.id===c.violationId;})[0]||{};
+  var ve = vehicleById(vi.vehicleId)||{};
+  openModal(
+    '<div class="modal"><div class="m-body"><div class="receipt">'+
+    '<div class="receipt-badge"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'+
+    '<h3>'+(justPaid?"Payment Successful":"Payment Receipt")+'</h3><div class="amt">'+money(vi.fine)+'</div>'+
+    '<div class="rows"><div class="r"><span>Status</span><b style="color:var(--ok)">Paid</b></div>'+
+    '<div class="r"><span>Challan no.</span><b>'+esc(c.number)+'</b></div>'+
+    '<div class="r"><span>Vehicle</span><b>'+esc(ve.plate)+'</b></div>'+
+    '<div class="r"><span>Owner</span><b>'+esc(ve.owner)+'</b></div>'+
+    '<div class="r"><span>Violation</span><b>'+esc(vi.type)+'</b></div>'+
+    '<div class="r"><span>Method</span><b>'+esc(c.method||"UPI")+'</b></div>'+
+    '<div class="r"><span>Paid on</span><b>'+esc(c.paid)+'</b></div></div>'+
+    '<button class="btn block" type="button" onclick="closeModal(); if(current===\'challans\')renderChallans();">Done</button>'+
+    '</div></div></div>'
+  );
+}
+
+/* ---- OFFICERS (admin) ---- */
+function renderOfficers(){
+  var counts = {}; DB.violations.forEach(function(v){ counts[v.officer]=(counts[v.officer]||0)+1; });
+  $("#view").innerHTML =
+    '<div class="panel"><div class="panel-head"><h3>Traffic Officers</h3></div><div class="panel-body">'+
+    '<div class="off-grid">'+OFFICERS.map(function(o){
+      var n = counts[o.name]||0;
+      return '<div class="off-card"><div class="oav">'+o.name.replace(/[^A-Za-z ]/g,"").trim().split(" ").slice(-1)[0].charAt(0)+'</div>'+
+        '<div><div class="on">'+esc(o.name)+'</div><div class="om">Badge '+esc(o.badge)+' • '+esc(o.zone)+' zone</div>'+
+        '<div style="margin-top:6px"><span class="chip">'+n+' fine'+(n===1?"":"s")+' issued</span></div></div></div>';
+    }).join("")+'</div></div></div>';
+}
+
+/* ---- REPORTS ---- */
+var charts = [];
+function renderReport(){
+  var t = totals();
+  var typeCount = {}; DB.violations.forEach(function(v){ typeCount[v.type]=(typeCount[v.type]||0)+1; });
+  // revenue by officer
+  var byOff = {}; DB.challans.forEach(function(c){ if(c.status==="Paid"){ var vi=DB.violations.filter(function(v){return v.id===c.violationId;})[0]; if(vi){ byOff[vi.officer]=(byOff[vi.officer]||0)+vi.fine; } } });
+  $("#view").innerHTML =
+    '<div class="charts">'+
+    '<div class="panel"><div class="panel-head"><h3>Revenue: Collected vs Pending</h3></div><div class="panel-body"><div class="chart-box"><canvas id="cRev"></canvas></div></div></div>'+
+    '<div class="panel"><div class="panel-head"><h3>Violation types</h3></div><div class="panel-body"><div class="chart-box"><canvas id="cType"></canvas></div></div></div>'+
+    '<div class="panel"><div class="panel-head"><h3>Paid vs Unpaid</h3></div><div class="panel-body"><div class="chart-box"><canvas id="cStatus"></canvas></div></div></div>'+
+    '<div class="panel"><div class="panel-head"><h3>Collections by Officer</h3></div><div class="panel-body"><div class="chart-box"><canvas id="cOff"></canvas></div></div></div>'+
+    '</div>';
+  if (typeof Chart === "undefined"){ return; }
+  charts.forEach(function(c){c.destroy();}); charts = [];
+  var grid = "oklch(91% 0.008 250)";
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  Chart.defaults.color = "oklch(46% 0.015 250)";
+  var pal = ["oklch(52% 0.13 235)","oklch(72% 0.15 65)","oklch(58% 0.18 27)","oklch(58% 0.14 150)","oklch(55% 0.16 290)","oklch(60% 0.13 340)","oklch(50% 0.1 200)","oklch(65% 0.14 120)"];
+  charts.push(new Chart($("#cRev"), {type:"bar",data:{labels:["Collected","Pending"],datasets:[{data:[t.revenue,t.pending],backgroundColor:["oklch(58% 0.14 150)","oklch(58% 0.18 27)"],borderRadius:8,maxBarThickness:80}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:grid}},x:{grid:{display:false}}},maintainAspectRatio:false}}));
+  var tL = Object.keys(typeCount);
+  charts.push(new Chart($("#cType"), {type:"doughnut",data:{labels:tL.length?tL:["No data"],datasets:[{data:tL.length?tL.map(function(k){return typeCount[k];}):[1],backgroundColor:pal}]},options:{plugins:{legend:{position:"bottom",labels:{boxWidth:12,padding:12}}},cutout:"58%",maintainAspectRatio:false}}));
+  charts.push(new Chart($("#cStatus"), {type:"pie",data:{labels:["Paid","Unpaid"],datasets:[{data:[t.paid,t.unpaid],backgroundColor:["oklch(58% 0.14 150)","oklch(58% 0.18 27)"]}]},options:{plugins:{legend:{position:"bottom",labels:{boxWidth:12,padding:12}}},maintainAspectRatio:false}}));
+  var oL = Object.keys(byOff);
+  charts.push(new Chart($("#cOff"), {type:"bar",data:{labels:oL.length?oL:["No data"],datasets:[{data:oL.length?oL.map(function(k){return byOff[k];}):[0],backgroundColor:"oklch(52% 0.13 235)",borderRadius:8,maxBarThickness:46}]},options:{indexAxis:"y",plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:grid}},y:{grid:{display:false}}},maintainAspectRatio:false}}));
+}
+</script>
+</body>
+</html>
